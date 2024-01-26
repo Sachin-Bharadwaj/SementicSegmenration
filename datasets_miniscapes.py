@@ -53,12 +53,18 @@ class DatasetMiniscapes(torch.utils.data.Dataset):
         if os.path.isfile(path_depth):
             # the depth map here is a np array object
             # we need to convert it to PIL object since transforms later on requires PIL object
-            depth = self.load_exr(path_depth)
+            depth = self.load_exr(path_depth) # this is depth in meters (float32)
+            # need to convert it to PIL image for using PIL.transforms later on, and PIL image is of uint8, so conver to uint8
             disparity = self.depth_meters_float32_to_disparity_uint8(depth, out_of_range_policy='clamp_to_range')
-            disparity_im = Image.fromarray(disparity)
-            # assert depth.size == rgb.size
-            out[MOD_DEPTH] = disparity_im  # depth
-            # out['disparity'] = disparity_im
+            # convert from disparity uint8 back to float32 such that it remains in range 0,255
+            depth = self.depth_disparity_uint8_to_meters_float32(disparity, check_all_pixels_valid=False)
+            depth = Image.fromarray(depth)
+            out[MOD_DEPTH] = depth
+            if 0:
+                disparity_im = Image.fromarray(disparity)
+                # assert depth.size == rgb.size
+                out[MOD_DEPTH] = disparity_im  # depth
+                # out['disparity'] = disparity_im
 
         if override_transforms is not None:
             out = override_transforms(out)
